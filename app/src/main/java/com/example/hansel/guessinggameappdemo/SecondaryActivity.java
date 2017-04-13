@@ -8,32 +8,53 @@ import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.text.NumberFormat;
+
 public class SecondaryActivity extends AppCompatActivity {
 
-    SeekBar minBar;
-    SeekBar maxBar;
-    TextView minValue;
-    TextView maxValue;
-    SharedPreferences minPreferences;
-    SharedPreferences maxPreferences;
+    private SeekBar minBar;
+    private SeekBar maxBar;
+    private TextView minAmount;
+    private TextView maxAmount;
+    private int minValue;
+    private int maxValue;
+    private NumberFormat textFormatter =NumberFormat.getNumberInstance();
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_secondary);
 
+        preferences = getSharedPreferences("limit",MODE_PRIVATE);
+
         minBar = (SeekBar) findViewById(R.id.minBar);
         maxBar = (SeekBar) findViewById(R.id.maxBar);
-        minValue = (TextView) findViewById(R.id.minValue);
-        maxValue = (TextView) findViewById(R.id.maxValue);
-        minPreferences = getSharedPreferences("min value", MODE_PRIVATE);
-        maxPreferences = getSharedPreferences("max value", MODE_PRIVATE);
+        minAmount = (TextView) findViewById(R.id.minAmount);
+        maxAmount = (TextView) findViewById(R.id.maxAmount);
 
+        minValue= preferences.getInt("minimum",1);
+        maxValue= preferences.getInt("maximum",10);
+        if(minValue==1){
+            minBar.setProgress(0);
+        }
+        else {
+            minBar.setProgress(preferences.getInt("minimum",0)*11+1);
+        }
+        if(maxValue==10) {
+            maxBar.setProgress(0);
+        }
+        else {
+            maxBar.setProgress((preferences.getInt("maximum",0)*10-100)/9);
+        }
+        minAmount.setText(textFormatter.format(minValue));
+        maxAmount.setText(textFormatter.format(maxValue));
 
         minBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                minValue.setText(String.valueOf(progress));
+                minValue= 1+ progress/12;
+                minAmount.setText(textFormatter.format(minValue));
             }
 
             @Override
@@ -46,10 +67,12 @@ public class SecondaryActivity extends AppCompatActivity {
 
             }
         });
+
         maxBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                maxValue.setText(String.valueOf(progress));
+                maxValue= (progress*9 +100)/10;
+                maxAmount.setText(textFormatter.format(maxValue));
             }
 
             @Override
@@ -62,39 +85,20 @@ public class SecondaryActivity extends AppCompatActivity {
 
             }
         });
+
     }
 
-    public void handler(View view){
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        int minProgress = minPreferences.getInt("min seek bar", 0);
-        minBar.setProgress(minProgress);
-
-        int maxProgress = maxPreferences.getInt("max seek bar", 0);
-        maxBar.setProgress(maxProgress);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        minPreferences.edit()
-                .putInt("min seek bar", minBar.getProgress())
+    public void setButton(View view){
+        if(minBar.getProgress()==0){
+            minValue=1;
+        }
+        if(maxBar.getProgress()==0){
+            maxValue=10;
+        }
+        preferences.edit()
+                .putInt("minimum",minValue)
+                .putInt("maximum",maxValue)
                 .apply();
-
-        maxPreferences.edit()
-                .putInt("max seek bar", maxBar.getProgress())
-                .apply();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
+        finish();
     }
 }
